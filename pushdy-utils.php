@@ -1,0 +1,65 @@
+<?php
+
+defined( 'ABSPATH' ) or die('This page may not be accessed directly.');
+
+class PushdyUtils {
+
+	/* If >= PHP 5.4, ENT_HTML401 | ENT_QUOTES will correctly decode most entities including both double and single quotes.
+   In PHP 5.3, ENT_HTML401 does not exist, so we have to use `str_replace("&apos;","'", $value)` before feeding it to html_entity_decode(). */
+	public static function decode_entities($string) {
+		$HTML_ENTITY_DECODE_FLAGS = ENT_QUOTES;
+		if (defined('ENT_HTML401')) {
+			$HTML_ENTITY_DECODE_FLAGS = ENT_HTML401 | $HTML_ENTITY_DECODE_FLAGS;
+		}
+		return html_entity_decode(str_replace("&apos;", "'", $string), $HTML_ENTITY_DECODE_FLAGS, 'UTF-8');
+	}
+
+	public static function normalize($string) {
+		$string = strval($string);
+		$string = sanitize_text_field($string);
+		$string = PushdyUtils::decode_entities($string);
+		$string = stripslashes($string);
+		$string = trim($string);
+		return $string;
+	}
+
+	public static function url_contains_parameter($text) {
+	  if (array_key_exists('REQUEST_URI', $_SERVER)) {
+      return strpos($_SERVER['REQUEST_URI'], $text);
+    }
+  }
+
+	public static function html_safe($string) {
+		$HTML_ENTITY_DECODE_FLAGS = ENT_QUOTES;
+		if (defined('ENT_HTML401')) {
+			$HTML_ENTITY_DECODE_FLAGS = ENT_HTML401 | $HTML_ENTITY_DECODE_FLAGS;
+		}
+		return htmlspecialchars($string, $HTML_ENTITY_DECODE_FLAGS, 'UTF-8');
+	}
+
+	public static function contains($string, $substring) {
+		return strpos($string, $substring) !== false;
+	}
+
+  /**
+   * Describes whether the user can view "Pushdy Push" on the left sidebar.
+   */
+  public static function can_modify_plugin_settings() {
+      return PushdyUtils::is_admin_user();
+  }
+
+  /**
+   * Describes whether the user can send notifications for a post.
+   */
+  public static function can_send_notifications() {
+      return current_user_can('publish_posts') || current_user_can('edit_published_posts');
+  }
+
+  /**
+   * To keep the plugin working the same as it was before, only allow administrators to perform important actions.
+   */
+  public static function is_admin_user() {
+    return current_user_can('delete_users');
+  }
+}
+?>
